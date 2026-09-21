@@ -126,13 +126,17 @@ function productEmoji(category) {
   return "👗";
 }
 function filterProducts(category) {
-  const filtered = products.filter(function(product) {
-    return product.category === category;
-  });
+  if (category === "all") {
+    renderProducts(products);
+  } else {
+    const filtered = products.filter(function(product) {
+      return product.category === category;
+    });
 
-  renderProducts(filtered);
+    renderProducts(filtered);
+  }
 
-  document.getElementById("shop").scrollIntoView({
+  document.getElementById("productGrid").scrollIntoView({
     behavior: "smooth"
   });
 }
