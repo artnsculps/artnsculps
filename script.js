@@ -1,631 +1,779 @@
-const starterProducts = [
+const starterProducts = [ 
 
-  {id:"s1",name:"Sunset Canvas",category:"art",price:65,description:"Original handmade artwork.",emoji:"🎨"},
+  {id:"s1",name:"Sunset Canvas",category:"art",price:65,description:"Original handmade artwork.",emoji:"🎨"}, 
 
-  {id:"s2",name:"Pink Chrome Nails",category:"nails",price:28,description:"Handmade press-on nail set.",emoji:"💅"},
+  {id:"s2",name:"Pink Chrome Nails",category:"nails",price:28,description:"Handmade press-on nail set.",emoji:"💅"}, 
 
-  {id:"s3",name:"Vintage Denim Jacket",category:"clothing",price:45,description:"Unique vintage fashion piece.",emoji:"👗"}
+  {id:"s3",name:"Vintage Denim Jacket",category:"clothing",price:45,description:"Unique vintage fashion piece.",emoji:"👗"} 
 
-];
+]; 
 
-let products = [];
+ 
 
-let cart = JSON.parse(localStorage.getItem("artnsculpsCart") || "[]");
+let products = []; 
 
-function saveCart() {
+let cart = JSON.parse(localStorage.getItem("artnsculpsCart") || "[]"); 
 
-  localStorage.setItem("artnsculpsCart", JSON.stringify(cart));
+ 
 
-  updateCartCount();
+function saveCart() { 
 
-}
+  localStorage.setItem("artnsculpsCart", JSON.stringify(cart)); 
 
-function updateCartCount() {
+  updateCartCount(); 
 
-  const count = document.getElementById("cartCount");
+} 
 
-  if (count) count.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+ 
 
-}
+function updateCartCount() { 
 
-function escapeHTML(text = "") {
+  const count = document.getElementById("cartCount"); 
 
-  return String(text).replace(/[&<>"']/g, char => ({
+  if (count) count.textContent = cart.reduce((sum, item) => sum + item.quantity, 0); 
 
-    "&":"&amp;",
+} 
 
-    "<":"&lt;",
+ 
 
-    ">":"&gt;",
+function escapeHTML(text = "") { 
 
-    '"':"&quot;",
+  return String(text).replace(/[&<>"']/g, char => ({ 
 
-    "'":"&#039;"
+    "&":"&amp;", 
 
-  }[char]));
+    "<":"&lt;", 
 
-}
+    ">":"&gt;", 
 
-async function loadProducts() {
+    '"':"&quot;", 
 
-  const { data, error } = await supabaseClient
+    "'":"&#039;" 
 
-    .from("products")
+  }[char])); 
 
-    .select("*")
+} 
 
-    .order("created_at", { ascending: false });
+ 
 
-  if (error) {
+async function loadProducts() { 
 
-    console.error(error);
+  const { data, error } = await supabaseClient 
 
-    products = starterProducts;
+    .from("products") 
 
-  } else {
+    .select("*") 
 
-    products = data && data.length ? data : starterProducts;
+    .order("created_at", { ascending: false }); 
 
-  }
+ 
 
-  renderProducts(products);
+  if (error) { 
 
-}
+    console.error(error); 
 
-function renderProducts(list) {
+    products = starterProducts; 
 
-  const grid = document.getElementById("productGrid");
+  } else { 
 
-  if (!grid) return;
+    products = data && data.length ? data : starterProducts; 
 
-  if (!list.length) {
+  } 
 
-    grid.innerHTML = "<p>No items found.</p>";
+ 
 
-    return;
+  renderProducts(products); 
 
-  }
+} 
 
-  grid.innerHTML = list.map(product => `
+ 
 
-    <article class="product-card">
+function renderProducts(list) { 
 
-      <div class="product-image">
+  const grid = document.getElementById("productGrid"); 
 
-        ${product.image_url
+  if (!grid) return; 
 
-          ? `<img src="${escapeHTML(product.image_url)}" alt="${escapeHTML(product.name)}">`
+ 
 
-          : `<span style="font-size:3rem">${product.emoji || "✨"}</span>`
+  if (!list.length) { 
 
-        }
+    grid.innerHTML = "<p>No items found.</p>"; 
 
-      </div>
+    return; 
 
-      <div class="product-info">
+  } 
 
-        <small>${escapeHTML(product.category)}</small>
+ 
 
-        <h3>${escapeHTML(product.name)}</h3>
+  grid.innerHTML = list.map(product => ` 
 
-        <p>${escapeHTML(product.description || "")}</p>
+    <article class="product-card"> 
 
-        <strong>$${Number(product.price).toFixed(2)}</strong>
+      <div class="product-image"> 
 
-        <button class="btn full" onclick="addToCart('${product.id}')">
+        ${product.image_url 
 
-          Add to cart
+          ? `<img src="${escapeHTML(product.image_url)}" alt="${escapeHTML(product.name)}">` 
 
-        </button>
+          : `<span style="font-size:3rem">${product.emoji || "✨"}</span>` 
 
-      </div>
+        } 
 
-    </article>
+      </div> 
 
-  `).join("");
+      <div class="product-info"> 
 
-}
+        <small>${escapeHTML(product.category)}</small> 
 
-function filterProducts(category) {
+        <h3>${escapeHTML(product.name)}</h3> 
 
-  const list = category === "all"
+        <p>${escapeHTML(product.description || "")}</p> 
 
-    ? products
+        <strong>$${Number(product.price).toFixed(2)}</strong> 
 
-    : products.filter(product => product.category === category);
+        <button class="btn full" onclick="addToCart('${product.id}')"> 
 
-  renderProducts(list);
+          Add to cart 
 
-  const filter = document.getElementById("categoryFilter");
+        </button> 
 
-  if (filter) filter.value = category;
+      </div> 
 
-}
+    </article> 
 
-function searchProducts() {
+  `).join(""); 
 
-  const input = document.getElementById("searchInput");
+} 
 
-  const results = document.getElementById("searchResults");
+ 
 
-  if (!input || !results) return;
+function filterProducts(category) { 
 
-  const search = input.value.toLowerCase().trim();
+  const list = category === "all" 
 
-  const matches = products.filter(product =>
+    ? products 
 
-    product.name.toLowerCase().includes(search) ||
+    : products.filter(product => product.category === category); 
 
-    product.category.toLowerCase().includes(search) ||
+ 
 
-    (product.description || "").toLowerCase().includes(search)
+  renderProducts(list); 
 
-  );
+ 
 
-  results.innerHTML = matches.map(product => `
+  const filter = document.getElementById("categoryFilter"); 
 
-    <div class="search-result">
+  if (filter) filter.value = category; 
 
-      <strong>${escapeHTML(product.name)}</strong>
+} 
 
-      <span>$${Number(product.price).toFixed(2)}</span>
+ 
 
-    </div>
+function searchProducts() { 
 
-  `).join("") || "<p>No items found.</p>";
+  const input = document.getElementById("searchInput"); 
 
-}
+  const results = document.getElementById("searchResults"); 
 
-function addToCart(id) {
+  if (!input || !results) return; 
 
-  const product = products.find(item => String(item.id) === String(id));
+ 
 
-  if (!product) return;
+  const search = input.value.toLowerCase().trim(); 
 
-  const existing = cart.find(item => String(item.id) === String(id));
+ 
 
-  if (existing) {
+  const matches = products.filter(product => 
 
-    existing.quantity++;
+    product.name.toLowerCase().includes(search) || 
 
-  } else {
+    product.category.toLowerCase().includes(search) || 
 
-    cart.push({
+    (product.description || "").toLowerCase().includes(search) 
 
-      id: product.id,
+  ); 
 
-      name: product.name,
+ 
 
-      price: Number(product.price),
+  results.innerHTML = matches.map(product => ` 
 
-      quantity: 1
+    <div class="search-result"> 
 
-    });
+      <strong>${escapeHTML(product.name)}</strong> 
 
-  }
+      <span>$${Number(product.price).toFixed(2)}</span> 
 
-  saveCart();
+    </div> 
 
-  alert("Added to your cart!");
+  `).join("") || "<p>No items found.</p>"; 
 
-}
+} 
 
-function openCart() {
+ 
 
-  renderCart();
+function addToCart(id) { 
 
-  openModal("cartModal");
+  const product = products.find(item => String(item.id) === String(id)); 
 
-}
+  if (!product) return; 
 
-function renderCart() {
+ 
 
-  const container = document.getElementById("cartItems");
+  const existing = cart.find(item => String(item.id) === String(id)); 
 
-  const totalElement = document.getElementById("cartTotal");
+ 
 
-  if (!container) return;
+  if (existing) { 
 
-  if (!cart.length) {
+    existing.quantity++; 
 
-    container.innerHTML = "<p>Your cart is empty.</p>";
+  } else { 
 
-    if (totalElement) totalElement.textContent = "0.00";
+    cart.push({ 
 
-    return;
+      id: product.id, 
 
-  }
+      name: product.name, 
 
-  container.innerHTML = cart.map((item, index) => `
+      price: Number(product.price), 
 
-    <div class="cart-item">
+      quantity: 1 
 
-      <strong>${escapeHTML(item.name)}</strong>
+    }); 
 
-      <span>$${item.price.toFixed(2)} × ${item.quantity}</span>
+  } 
 
-      <button onclick="removeFromCart(${index})">Remove</button>
+ 
 
-    </div>
+  saveCart(); 
 
-  `).join("");
+  alert("Added to your cart!"); 
 
-  const total = cart.reduce(
+} 
 
-    (sum, item) => sum + item.price * item.quantity,
+ 
 
-    0
+function openCart() { 
 
-  );
+  renderCart(); 
 
-  if (totalElement) totalElement.textContent = total.toFixed(2);
+  openModal("cartModal"); 
 
-}
+} 
 
-function removeFromCart(index) {
+ 
 
-  cart.splice(index, 1);
+function renderCart() { 
 
-  saveCart();
+  const container = document.getElementById("cartItems"); 
 
-  renderCart();
+  const totalElement = document.getElementById("cartTotal"); 
 
-}
+ 
 
-async function getCurrentUser() {
+  if (!container) return; 
 
-  const { data } = await supabaseClient.auth.getUser();
+ 
 
-  return data.user;
+  if (!cart.length) { 
 
-}
+    container.innerHTML = "<p>Your cart is empty.</p>"; 
 
-async function openAccount() {
+    if (totalElement) totalElement.textContent = "0.00"; 
 
-  const user = await getCurrentUser();
+    return; 
 
-  if (user) {
+  } 
 
-    showAccount(user);
+ 
 
-  } else {
+  container.innerHTML = cart.map((item, index) => ` 
 
-    showLogin();
+    <div class="cart-item"> 
 
-  }
+      <strong>${escapeHTML(item.name)}</strong> 
 
-  openModal("accountModal");
+      <span>$${item.price.toFixed(2)} × ${item.quantity}</span> 
 
-}
+      <button onclick="removeFromCart(${index})">Remove</button> 
 
-function showLogin() {
+    </div> 
 
-  document.getElementById("loginView").hidden = false;
+  `).join(""); 
 
-  document.getElementById("signupView").hidden = true;
+ 
 
-  document.getElementById("accountView").hidden = true;
+  const total = cart.reduce( 
 
-}
+    (sum, item) => sum + item.price * item.quantity, 
 
-function showSignup() {
+    0 
 
-  document.getElementById("loginView").hidden = true;
+  ); 
 
-  document.getElementById("signupView").hidden = false;
+ 
 
-  document.getElementById("accountView").hidden = true;
+  if (totalElement) totalElement.textContent = total.toFixed(2); 
 
-}
+} 
 
-async function signup() {
+ 
 
-  const name = document.getElementById("signupName").value.trim();
+function removeFromCart(index) { 
 
-  const email = document.getElementById("signupEmail").value.trim();
+  cart.splice(index, 1); 
 
-  const password = document.getElementById("signupPassword").value;
+  saveCart(); 
 
-  if (!name || !email || password.length < 6) {
+  renderCart(); 
 
-    alert("Please enter your name, email, and a password of at least 6 characters.");
+} 
 
-    return;
+ 
 
-  }
+async function getCurrentUser() { 
 
-  const { error } = await supabaseClient.auth.signUp({
+  const { data } = await supabaseClient.auth.getUser(); 
 
-    email,
+  return data.user; 
 
-    password,
+} 
 
-    options: {
+ 
 
-      data: {
+async function openAccount() { 
 
-        full_name: name
+  const user = await getCurrentUser(); 
 
-      }
+ 
 
-    }
+  if (user) { 
 
-  });
+    showAccount(user); 
 
-  if (error) {
+  } else { 
 
-    alert(error.message);
+    showLogin(); 
 
-    return;
+  } 
 
-  }
+ 
 
-  alert("Account created! Check your email if email confirmation is required.");
+  openModal("accountModal"); 
 
-  showLogin();
+} 
 
-}
+ 
 
-async function login() {
+function showLogin() { 
 
-  const email = document.getElementById("loginEmail").value.trim();
+  document.getElementById("loginView").hidden = false; 
 
-  const password = document.getElementById("loginPassword").value;
+  document.getElementById("signupView").hidden = true; 
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
+  document.getElementById("accountView").hidden = true; 
 
-    email,
+} 
 
-    password
+ 
 
-  });
+function showSignup() { 
 
-  if (error) {
+  document.getElementById("loginView").hidden = true; 
 
-    alert(error.message);
+  document.getElementById("signupView").hidden = false; 
 
-    return;
+  document.getElementById("accountView").hidden = true; 
 
-  }
+} 
 
-  showAccount(data.user);
+ 
 
-}
+async function signup() { 
 
-function showAccount(user) {
+  const name = document.getElementById("signupName").value.trim(); 
 
-  document.getElementById("loginView").hidden = true;
+  const email = document.getElementById("signupEmail").value.trim(); 
 
-  document.getElementById("signupView").hidden = true;
+  const password = document.getElementById("signupPassword").value; 
 
-  document.getElementById("accountView").hidden = false;
+ 
 
-  const name =
+  if (!name || !email || password.length < 6) { 
 
-    user.user_metadata?.full_name ||
+    alert("Please enter your name, email, and a password of at least 6 characters."); 
 
-    user.email?.split("@")[0] ||
+    return; 
 
-    "Welcome";
+  } 
 
-  document.getElementById("welcomeName").textContent = `Welcome, ${name}!`;
+ 
 
-  document.getElementById("accountDetails").innerHTML =
+  const { error } = await supabaseClient.auth.signUp({ 
 
-    `<p>Signed in as ${escapeHTML(user.email)}</p>`;
+    email, 
 
-}
+    password, 
 
-async function logout() {
+    options: { 
 
-  await supabaseClient.auth.signOut();
+      data: { 
 
-  closeModal("accountModal");
+        full_name: name 
 
-  alert("You have been logged out.");
+      } 
 
-}
+    } 
 
-async function openSell() {
+  }); 
 
-  const user = await getCurrentUser();
+ 
 
-  if (!user) {
+  if (error) { 
 
-    alert("Please create an account or log in before selling.");
+    alert(error.message); 
 
-    openAccount();
+    return; 
 
-    return;
+  } 
 
-  }
+ 
 
-  openModal("sellModal");
+  alert("Account created! Check your email if email confirmation is required."); 
 
-}
+  showLogin(); 
 
-async function listItem() {
+} 
 
-  const user = await getCurrentUser();
+ 
 
-  if (!user) {
+async function login() { 
 
-    alert("Please log in first.");
+  const email = document.getElementById("loginEmail").value.trim(); 
 
-    return;
+  const password = document.getElementById("loginPassword").value; 
 
-  }
+ 
 
-  const name = document.getElementById("itemName").value.trim();
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ 
 
-  const category = document.getElementById("itemCategory").value;
+    email, 
 
-  const price = Number(document.getElementById("itemPrice").value);
+    password 
 
-  const image_url = document.getElementById("itemImage").value.trim();
+  }); 
 
-  const description = document.getElementById("itemDescription").value.trim();
+ 
 
-  if (!name || !price || price <= 0) {
+  if (error) { 
 
-    alert("Please enter an item name and a valid price.");
+    alert(error.message); 
 
-    return;
+    return; 
 
-  }
+  } 
 
-  const { error } = await supabaseClient
+ 
 
-    .from("products")
+  showAccount(data.user); 
 
-    .insert({
+} 
 
-      seller_id: user.id,
+ 
 
-      name,
+function showAccount(user) { 
 
-      category,
+  document.getElementById("loginView").hidden = true; 
 
-      price,
+  document.getElementById("signupView").hidden = true; 
 
-      image_url: image_url || null,
+  document.getElementById("accountView").hidden = false; 
 
-      description
+ 
 
-    });
+  const name = 
 
-  if (error) {
+    user.user_metadata?.full_name || 
 
-    alert(error.message);
+    user.email?.split("@")[0] || 
 
-    return;
+    "Welcome"; 
 
-  }
+ 
 
-  alert("Your item has been listed!");
+  document.getElementById("welcomeName").textContent = `Welcome, ${name}!`; 
 
-  closeModal("sellModal");
+ 
 
-  document.getElementById("itemName").value = "";
+  document.getElementById("accountDetails").innerHTML = 
 
-  document.getElementById("itemPrice").value = "";
+    `<p>Signed in as ${escapeHTML(user.email)}</p>`; 
 
-  document.getElementById("itemImage").value = "";
+} 
 
-  document.getElementById("itemDescription").value = "";
+ 
 
-  await loadProducts();
+async function logout() { 
 
-}
+  await supabaseClient.auth.signOut(); 
 
-async function showListings() {
+  closeModal("accountModal"); 
 
-  const user = await getCurrentUser();
+  alert("You have been logged out."); 
 
-  if (!user) return;
+} 
 
-  const { data, error } = await supabaseClient
+ 
 
-    .from("products")
+async function openSell() { 
 
-    .select("*")
+  const user = await getCurrentUser(); 
 
-    .eq("seller_id", user.id)
+ 
 
-    .order("created_at", { ascending: false });
+  if (!user) { 
 
-  if (error) {
+    alert("Please create an account or log in before selling."); 
 
-    alert(error.message);
+    openAccount(); 
 
-    return;
+    return; 
 
-  }
+  } 
 
-  document.getElementById("accountDetails").innerHTML =
+ 
 
-    data.length
+  openModal("sellModal"); 
 
-      ? data.map(item => `<p>🏷️ ${escapeHTML(item.name)} — $${Number(item.price).toFixed(2)}</p>`).join("")
+} 
 
-      : "<p>You haven't listed anything yet.</p>";
+ 
 
-}
+async function listItem() { 
 
-async function showPurchases() {
+  const user = await getCurrentUser(); 
 
-  const user = await getCurrentUser();
+ 
 
-  if (!user) return;
+  if (!user) { 
 
-  const { data, error } = await supabaseClient
+    alert("Please log in first."); 
 
-    .from("orders")
+    return; 
 
-    .select("*")
+  } 
 
-    .eq("buyer_id", user.id)
+ 
 
-    .order("created_at", { ascending: false });
+  const name = document.getElementById("itemName").value.trim(); 
 
-  if (error) {
+  const category = document.getElementById("itemCategory").value; 
 
-    alert(error.message);
+  const price = Number(document.getElementById("itemPrice").value); 
 
-    return;
+  const image_url = document.getElementById("itemImage").value.trim(); 
 
-  }
+  const description = document.getElementById("itemDescription").value.trim(); 
 
-  document.getElementById("accountDetails").innerHTML =
+ 
 
-    data.length
+  if (!name || !price || price <= 0) { 
 
-      ? data.map(order =>
+    alert("Please enter an item name and a valid price."); 
 
-          `<p>🛍️ Order #${order.id} — $${Number(order.total).toFixed(2)} — ${escapeHTML(order.status)}</p>`
+    return; 
 
-        ).join("")
+  } 
 
-      : "<p>You don't have any purchases yet.</p>";
+ 
 
-}
+  const { error } = await supabaseClient 
 
-function checkout() {
+    .from("products") 
 
-  alert("Your cart is ready! Real payment checkout will be connected next.");
+    .insert({ 
 
-}
+      seller_id: user.id, 
 
-function openModal(id) {
+      name, 
 
-  const modal = document.getElementById(id);
+      category, 
 
-  if (modal) modal.classList.add("open");
+      price, 
 
-}
+      image_url: image_url || null, 
 
-function closeModal(id) {
+      description 
 
-  const modal = document.getElementById(id);
+    }); 
 
-  if (modal) modal.classList.remove("open");
+ 
 
-}
+  if (error) { 
 
-document.addEventListener("DOMContentLoaded", () => {
+    alert(error.message); 
 
-  updateCartCount();
+    return; 
 
-  loadProducts();
+  } 
 
-  supabaseClient.auth.getSession().then(({ data }) => {
+ 
 
-    if (data.session) {
+  alert("Your item has been listed!"); 
 
-      console.log("ArtNSculps user is signed in.");
+  closeModal("sellModal"); 
 
-    }
+ 
 
-  });
+  document.getElementById("itemName").value = ""; 
 
-});
+  document.getElementById("itemPrice").value = ""; 
+
+  document.getElementById("itemImage").value = ""; 
+
+  document.getElementById("itemDescription").value = ""; 
+
+ 
+
+  await loadProducts(); 
+
+} 
+
+ 
+
+async function showListings() { 
+
+  const user = await getCurrentUser(); 
+
+  if (!user) return; 
+
+ 
+
+  const { data, error } = await supabaseClient 
+
+    .from("products") 
+
+    .select("*") 
+
+    .eq("seller_id", user.id) 
+
+    .order("created_at", { ascending: false }); 
+
+ 
+
+  if (error) { 
+
+    alert(error.message); 
+
+    return; 
+
+  } 
+
+ 
+
+  document.getElementById("accountDetails").innerHTML = 
+
+    data.length 
+
+      ? data.map(item => `<p>🏷️ ${escapeHTML(item.name)} — $${Number(item.price).toFixed(2)}</p>`).join("") 
+
+      : "<p>You haven't listed anything yet.</p>"; 
+
+} 
+
+ 
+
+async function showPurchases() { 
+
+  const user = await getCurrentUser(); 
+
+  if (!user) return; 
+
+ 
+
+  const { data, error } = await supabaseClient 
+
+    .from("orders") 
+
+    .select("*") 
+
+    .eq("buyer_id", user.id) 
+
+    .order("created_at", { ascending: false }); 
+
+ 
+
+  if (error) { 
+
+    alert(error.message); 
+
+    return; 
+
+  } 
+
+ 
+
+  document.getElementById("accountDetails").innerHTML = 
+
+    data.length 
+
+      ? data.map(order => 
+
+          `<p>🛍️ Order #${order.id} — $${Number(order.total).toFixed(2)} — ${escapeHTML(order.status)}</p>` 
+
+        ).join("") 
+
+      : "<p>You don't have any purchases yet.</p>"; 
+
+} 
+
+ 
+
+function checkout() { 
+
+  alert("Your cart is ready! Real payment checkout will be connected next."); 
+
+} 
+
+ 
+
+function openModal(id) { 
+
+  const modal = document.getElementById(id); 
+
+  if (modal) modal.classList.add("open"); 
+
+} 
+
+ 
+
+function closeModal(id) { 
+
+  const modal = document.getElementById(id); 
+
+  if (modal) modal.classList.remove("open"); 
+
+} 
+
+ 
+
+document.addEventListener("DOMContentLoaded", () => { 
+
+  updateCartCount(); 
+
+  loadProducts(); 
+
+ 
+
+  supabaseClient.auth.getSession().then(({ data }) => { 
+
+    if (data.session) { 
+
+      console.log("ArtNSculps user is signed in."); 
+
+    } 
+
+  }); 
+
+}); 
