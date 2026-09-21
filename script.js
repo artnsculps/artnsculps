@@ -121,8 +121,8 @@ function categoryName(category) {
 }
 
 function productEmoji(category) {
-  if (category === "art") return "🎨";
-  if (category === "nails") return "💅";
+  if (category === "art") return "✎𓂃";
+  if (category === "nails") return "ྀིྀི";
   return "👗";
 }
 function filterProducts(category) {
