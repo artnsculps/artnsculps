@@ -1,85 +1,631 @@
-const starterProducts=[
-{id:1,name:"Sunset Canvas",category:"art",price:65,emoji:"🎨",description:"Original handmade artwork.",seller:"ArtNSculps Studio"},
-{id:2,name:"Pink Chrome Nails",category:"nails",price:28,emoji:"💅",description:"Handmade press-on nail set.",seller:"Mia"},
-{id:3,name:"Vintage Denim Jacket",category:"clothing",price:45,emoji:"👗",description:"Unique vintage denim jacket.",seller:"Sofia"},
-{id:4,name:"Abstract Print",category:"art",price:35,emoji:"🖼️",description:"Limited edition art print.",seller:"Ava"},
-{id:5,name:"French Tip Nails",category:"nails",price:24,emoji:"💅",description:"Classic handmade French tips.",seller:"Mia"},
-{id:6,name:"Brown Y2K Top",category:"clothing",price:30,emoji:"👚",description:"Cute Y2K-inspired top.",seller:"Sofia"},
-{id:7,name:"Flower Painting",category:"art",price:75,emoji:"🌸",description:"Original floral painting.",seller:"Ava"},
-{id:8,name:"Butterfly Nails",category:"nails",price:32,emoji:"🦋",description:"Hand-painted butterfly set.",seller:"Mia"}
+const starterProducts = [
+
+  {id:"s1",name:"Sunset Canvas",category:"art",price:65,description:"Original handmade artwork.",emoji:"🎨"},
+
+  {id:"s2",name:"Pink Chrome Nails",category:"nails",price:28,description:"Handmade press-on nail set.",emoji:"💅"},
+
+  {id:"s3",name:"Vintage Denim Jacket",category:"clothing",price:45,description:"Unique vintage fashion piece.",emoji:"👗"}
+
 ];
-let products=JSON.parse(localStorage.getItem("artnsculpsProducts")||"null")||starterProducts;
-let cart=JSON.parse(localStorage.getItem("artnsculpsCart")||"[]");
 
-function save(){localStorage.setItem("artnsculpsProducts",JSON.stringify(products));localStorage.setItem("artnsculpsCart",JSON.stringify(cart));}
-function currentUser(){return JSON.parse(localStorage.getItem("artnsculpsUser")||"null");}
+let products = [];
 
-function displayProducts(list=products){
- const grid=document.getElementById("productGrid"); grid.innerHTML="";
- if(!list.length){grid.innerHTML='<p class="empty">No items found.</p>';return;}
- list.forEach(p=>{
-  const card=document.createElement("article"); card.className="product";
-  const visual=p.image?`<img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}">`:`<div class="placeholder">${p.emoji}</div>`;
-  card.innerHTML=`<div class="product-image">${visual}</div><div class="product-info"><h3>${escapeHtml(p.name)}</h3><p>${escapeHtml(p.description)}</p><small>${escapeHtml(p.category)} · ${escapeHtml(p.seller||"Creator")}</small><div class="price">$${Number(p.price).toFixed(2)}</div><button class="btn add" onclick="addToCart(${p.id})">Add to cart</button></div>`;
-  grid.appendChild(card);
- });
+let cart = JSON.parse(localStorage.getItem("artnsculpsCart") || "[]");
+
+function saveCart() {
+
+  localStorage.setItem("artnsculpsCart", JSON.stringify(cart));
+
+  updateCartCount();
+
 }
-function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
-function filterProducts(category){
- document.getElementById("categoryFilter").value=category;
- displayProducts(category==="all"?products:products.filter(p=>p.category===category));
- document.getElementById("shop").scrollIntoView({behavior:"smooth"});
+
+function updateCartCount() {
+
+  const count = document.getElementById("cartCount");
+
+  if (count) count.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+
 }
-function addToCart(id){const p=products.find(x=>x.id===id);if(p){cart.push(p);save();updateCart();alert(`${p.name} was added to your cart.`);}}
-function updateCart(){
- document.getElementById("cartCount").textContent=cart.length;
- const box=document.getElementById("cartItems");box.innerHTML="";
- let total=0;
- if(!cart.length) box.innerHTML='<p class="empty">Your cart is empty.</p>';
- cart.forEach((p,i)=>{total+=Number(p.price);const row=document.createElement("div");row.className="cart-row";row.innerHTML=`<div><strong>${escapeHtml(p.name)}</strong><br>$${Number(p.price).toFixed(2)}</div><button onclick="removeFromCart(${i})">Remove</button>`;box.appendChild(row);});
- document.getElementById("cartTotal").textContent=total.toFixed(2);
+
+function escapeHTML(text = "") {
+
+  return String(text).replace(/[&<>"']/g, char => ({
+
+    "&":"&amp;",
+
+    "<":"&lt;",
+
+    ">":"&gt;",
+
+    '"':"&quot;",
+
+    "'":"&#039;"
+
+  }[char]));
+
 }
-function removeFromCart(i){cart.splice(i,1);save();updateCart();}
-function openCart(){updateCart();openModal("cartModal");}
-function openModal(id){document.getElementById(id).classList.add("active");}
-function closeModal(id){document.getElementById(id).classList.remove("active");}
-function openAccount(){
- const u=currentUser(); document.getElementById("loginView").hidden=!!u;document.getElementById("signupView").hidden=true;document.getElementById("accountView").hidden=!u;
- if(u) document.getElementById("welcomeName").textContent=`Hi, ${u.name}!`;
- openModal("accountModal");
+
+async function loadProducts() {
+
+  const { data, error } = await supabaseClient
+
+    .from("products")
+
+    .select("*")
+
+    .order("created_at", { ascending: false });
+
+  if (error) {
+
+    console.error(error);
+
+    products = starterProducts;
+
+  } else {
+
+    products = data && data.length ? data : starterProducts;
+
+  }
+
+  renderProducts(products);
+
 }
-function showSignup(){document.getElementById("loginView").hidden=true;document.getElementById("signupView").hidden=false;}
-function showLogin(){document.getElementById("loginView").hidden=false;document.getElementById("signupView").hidden=true;}
-function signup(){
- const name=document.getElementById("signupName").value.trim(),email=document.getElementById("signupEmail").value.trim(),password=document.getElementById("signupPassword").value;
- if(!name||!email||!password)return alert("Please complete all fields.");
- localStorage.setItem("artnsculpsUser",JSON.stringify({name,email,password}));
- alert(`Welcome to ArtNSculps, ${name}!`);openAccount();
+
+function renderProducts(list) {
+
+  const grid = document.getElementById("productGrid");
+
+  if (!grid) return;
+
+  if (!list.length) {
+
+    grid.innerHTML = "<p>No items found.</p>";
+
+    return;
+
+  }
+
+  grid.innerHTML = list.map(product => `
+
+    <article class="product-card">
+
+      <div class="product-image">
+
+        ${product.image_url
+
+          ? `<img src="${escapeHTML(product.image_url)}" alt="${escapeHTML(product.name)}">`
+
+          : `<span style="font-size:3rem">${product.emoji || "✨"}</span>`
+
+        }
+
+      </div>
+
+      <div class="product-info">
+
+        <small>${escapeHTML(product.category)}</small>
+
+        <h3>${escapeHTML(product.name)}</h3>
+
+        <p>${escapeHTML(product.description || "")}</p>
+
+        <strong>$${Number(product.price).toFixed(2)}</strong>
+
+        <button class="btn full" onclick="addToCart('${product.id}')">
+
+          Add to cart
+
+        </button>
+
+      </div>
+
+    </article>
+
+  `).join("");
+
 }
-function login(){
- const email=document.getElementById("loginEmail").value.trim(),password=document.getElementById("loginPassword").value;
- const saved=currentUser();
- if(saved&&saved.email===email&&saved.password===password){alert("Welcome back!");openAccount();}else{alert("For this demo, create an account first on this device.");}
+
+function filterProducts(category) {
+
+  const list = category === "all"
+
+    ? products
+
+    : products.filter(product => product.category === category);
+
+  renderProducts(list);
+
+  const filter = document.getElementById("categoryFilter");
+
+  if (filter) filter.value = category;
+
 }
-function logout(){localStorage.removeItem("artnsculpsUser");closeModal("accountModal");}
-function openSell(){if(!currentUser()){alert("Create an account first so your listing can belong to you.");openAccount();showSignup();return;}openModal("sellModal");}
-function listItem(){
- const name=document.getElementById("itemName").value.trim(),category=document.getElementById("itemCategory").value,price=Number(document.getElementById("itemPrice").value),image=document.getElementById("itemImage").value.trim(),description=document.getElementById("itemDescription").value.trim(),u=currentUser();
- if(!name||!price||!description)return alert("Please complete the item name, price and description.");
- const p={id:Date.now(),name,category,price,image,description,seller:u.name,owner:u.email,emoji:category==="art"?"🎨":category==="nails"?"💅":"👗"};
- products.push(p);save();displayProducts();closeModal("sellModal");["itemName","itemPrice","itemImage","itemDescription"].forEach(id=>document.getElementById(id).value="");alert("Your item is now listed on this browser.");
+
+function searchProducts() {
+
+  const input = document.getElementById("searchInput");
+
+  const results = document.getElementById("searchResults");
+
+  if (!input || !results) return;
+
+  const search = input.value.toLowerCase().trim();
+
+  const matches = products.filter(product =>
+
+    product.name.toLowerCase().includes(search) ||
+
+    product.category.toLowerCase().includes(search) ||
+
+    (product.description || "").toLowerCase().includes(search)
+
+  );
+
+  results.innerHTML = matches.map(product => `
+
+    <div class="search-result">
+
+      <strong>${escapeHTML(product.name)}</strong>
+
+      <span>$${Number(product.price).toFixed(2)}</span>
+
+    </div>
+
+  `).join("") || "<p>No items found.</p>";
+
 }
-function searchProducts(){
- const q=document.getElementById("searchInput").value.toLowerCase().trim(),box=document.getElementById("searchResults");box.innerHTML="";
- products.filter(p=>(p.name+" "+p.category+" "+p.description).toLowerCase().includes(q)).slice(0,12).forEach(p=>{const d=document.createElement("div");d.className="mini-result";d.innerHTML=`<span>${escapeHtml(p.emoji)} ${escapeHtml(p.name)} — $${Number(p.price).toFixed(2)}</span><button onclick="addToCart(${p.id})">Add</button>`;box.appendChild(d);});
+
+function addToCart(id) {
+
+  const product = products.find(item => String(item.id) === String(id));
+
+  if (!product) return;
+
+  const existing = cart.find(item => String(item.id) === String(id));
+
+  if (existing) {
+
+    existing.quantity++;
+
+  } else {
+
+    cart.push({
+
+      id: product.id,
+
+      name: product.name,
+
+      price: Number(product.price),
+
+      quantity: 1
+
+    });
+
+  }
+
+  saveCart();
+
+  alert("Added to your cart!");
+
 }
-function showPurchases(){const orders=JSON.parse(localStorage.getItem("artnsculpsPurchases")||"[]");document.getElementById("accountDetails").innerHTML=orders.length?orders.map(o=>`<p>${escapeHtml(o.name)} — $${Number(o.price).toFixed(2)}</p>`).join(""):'<p class="empty">No purchases yet.</p>';}
-function showListings(){const u=currentUser();const mine=products.filter(p=>p.owner===u.email);document.getElementById("accountDetails").innerHTML=mine.length?mine.map(p=>`<p>${escapeHtml(p.name)} — $${Number(p.price).toFixed(2)}</p>`).join(""):'<p class="empty">You have no listings yet.</p>';}
-function checkout(){
- if(!cart.length)return alert("Your cart is empty.");
- const u=currentUser();if(!u){alert("Create an account before checkout.");closeModal("cartModal");openAccount();showSignup();return;}
- const old=JSON.parse(localStorage.getItem("artnsculpsPurchases")||"[]");localStorage.setItem("artnsculpsPurchases",JSON.stringify([...old,...cart]));
- cart=[];save();updateCart();closeModal("cartModal");alert("Demo checkout complete! A real payment processor can be connected next.");
+
+function openCart() {
+
+  renderCart();
+
+  openModal("cartModal");
+
 }
-document.addEventListener("click",e=>{if(e.target.classList.contains("modal"))e.target.classList.remove("active");});
-displayProducts();updateCart();
+
+function renderCart() {
+
+  const container = document.getElementById("cartItems");
+
+  const totalElement = document.getElementById("cartTotal");
+
+  if (!container) return;
+
+  if (!cart.length) {
+
+    container.innerHTML = "<p>Your cart is empty.</p>";
+
+    if (totalElement) totalElement.textContent = "0.00";
+
+    return;
+
+  }
+
+  container.innerHTML = cart.map((item, index) => `
+
+    <div class="cart-item">
+
+      <strong>${escapeHTML(item.name)}</strong>
+
+      <span>$${item.price.toFixed(2)} × ${item.quantity}</span>
+
+      <button onclick="removeFromCart(${index})">Remove</button>
+
+    </div>
+
+  `).join("");
+
+  const total = cart.reduce(
+
+    (sum, item) => sum + item.price * item.quantity,
+
+    0
+
+  );
+
+  if (totalElement) totalElement.textContent = total.toFixed(2);
+
+}
+
+function removeFromCart(index) {
+
+  cart.splice(index, 1);
+
+  saveCart();
+
+  renderCart();
+
+}
+
+async function getCurrentUser() {
+
+  const { data } = await supabaseClient.auth.getUser();
+
+  return data.user;
+
+}
+
+async function openAccount() {
+
+  const user = await getCurrentUser();
+
+  if (user) {
+
+    showAccount(user);
+
+  } else {
+
+    showLogin();
+
+  }
+
+  openModal("accountModal");
+
+}
+
+function showLogin() {
+
+  document.getElementById("loginView").hidden = false;
+
+  document.getElementById("signupView").hidden = true;
+
+  document.getElementById("accountView").hidden = true;
+
+}
+
+function showSignup() {
+
+  document.getElementById("loginView").hidden = true;
+
+  document.getElementById("signupView").hidden = false;
+
+  document.getElementById("accountView").hidden = true;
+
+}
+
+async function signup() {
+
+  const name = document.getElementById("signupName").value.trim();
+
+  const email = document.getElementById("signupEmail").value.trim();
+
+  const password = document.getElementById("signupPassword").value;
+
+  if (!name || !email || password.length < 6) {
+
+    alert("Please enter your name, email, and a password of at least 6 characters.");
+
+    return;
+
+  }
+
+  const { error } = await supabaseClient.auth.signUp({
+
+    email,
+
+    password,
+
+    options: {
+
+      data: {
+
+        full_name: name
+
+      }
+
+    }
+
+  });
+
+  if (error) {
+
+    alert(error.message);
+
+    return;
+
+  }
+
+  alert("Account created! Check your email if email confirmation is required.");
+
+  showLogin();
+
+}
+
+async function login() {
+
+  const email = document.getElementById("loginEmail").value.trim();
+
+  const password = document.getElementById("loginPassword").value;
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+
+    email,
+
+    password
+
+  });
+
+  if (error) {
+
+    alert(error.message);
+
+    return;
+
+  }
+
+  showAccount(data.user);
+
+}
+
+function showAccount(user) {
+
+  document.getElementById("loginView").hidden = true;
+
+  document.getElementById("signupView").hidden = true;
+
+  document.getElementById("accountView").hidden = false;
+
+  const name =
+
+    user.user_metadata?.full_name ||
+
+    user.email?.split("@")[0] ||
+
+    "Welcome";
+
+  document.getElementById("welcomeName").textContent = `Welcome, ${name}!`;
+
+  document.getElementById("accountDetails").innerHTML =
+
+    `<p>Signed in as ${escapeHTML(user.email)}</p>`;
+
+}
+
+async function logout() {
+
+  await supabaseClient.auth.signOut();
+
+  closeModal("accountModal");
+
+  alert("You have been logged out.");
+
+}
+
+async function openSell() {
+
+  const user = await getCurrentUser();
+
+  if (!user) {
+
+    alert("Please create an account or log in before selling.");
+
+    openAccount();
+
+    return;
+
+  }
+
+  openModal("sellModal");
+
+}
+
+async function listItem() {
+
+  const user = await getCurrentUser();
+
+  if (!user) {
+
+    alert("Please log in first.");
+
+    return;
+
+  }
+
+  const name = document.getElementById("itemName").value.trim();
+
+  const category = document.getElementById("itemCategory").value;
+
+  const price = Number(document.getElementById("itemPrice").value);
+
+  const image_url = document.getElementById("itemImage").value.trim();
+
+  const description = document.getElementById("itemDescription").value.trim();
+
+  if (!name || !price || price <= 0) {
+
+    alert("Please enter an item name and a valid price.");
+
+    return;
+
+  }
+
+  const { error } = await supabaseClient
+
+    .from("products")
+
+    .insert({
+
+      seller_id: user.id,
+
+      name,
+
+      category,
+
+      price,
+
+      image_url: image_url || null,
+
+      description
+
+    });
+
+  if (error) {
+
+    alert(error.message);
+
+    return;
+
+  }
+
+  alert("Your item has been listed!");
+
+  closeModal("sellModal");
+
+  document.getElementById("itemName").value = "";
+
+  document.getElementById("itemPrice").value = "";
+
+  document.getElementById("itemImage").value = "";
+
+  document.getElementById("itemDescription").value = "";
+
+  await loadProducts();
+
+}
+
+async function showListings() {
+
+  const user = await getCurrentUser();
+
+  if (!user) return;
+
+  const { data, error } = await supabaseClient
+
+    .from("products")
+
+    .select("*")
+
+    .eq("seller_id", user.id)
+
+    .order("created_at", { ascending: false });
+
+  if (error) {
+
+    alert(error.message);
+
+    return;
+
+  }
+
+  document.getElementById("accountDetails").innerHTML =
+
+    data.length
+
+      ? data.map(item => `<p>🏷️ ${escapeHTML(item.name)} — $${Number(item.price).toFixed(2)}</p>`).join("")
+
+      : "<p>You haven't listed anything yet.</p>";
+
+}
+
+async function showPurchases() {
+
+  const user = await getCurrentUser();
+
+  if (!user) return;
+
+  const { data, error } = await supabaseClient
+
+    .from("orders")
+
+    .select("*")
+
+    .eq("buyer_id", user.id)
+
+    .order("created_at", { ascending: false });
+
+  if (error) {
+
+    alert(error.message);
+
+    return;
+
+  }
+
+  document.getElementById("accountDetails").innerHTML =
+
+    data.length
+
+      ? data.map(order =>
+
+          `<p>🛍️ Order #${order.id} — $${Number(order.total).toFixed(2)} — ${escapeHTML(order.status)}</p>`
+
+        ).join("")
+
+      : "<p>You don't have any purchases yet.</p>";
+
+}
+
+function checkout() {
+
+  alert("Your cart is ready! Real payment checkout will be connected next.");
+
+}
+
+function openModal(id) {
+
+  const modal = document.getElementById(id);
+
+  if (modal) modal.classList.add("open");
+
+}
+
+function closeModal(id) {
+
+  const modal = document.getElementById(id);
+
+  if (modal) modal.classList.remove("open");
+
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  updateCartCount();
+
+  loadProducts();
+
+  supabaseClient.auth.getSession().then(({ data }) => {
+
+    if (data.session) {
+
+      console.log("ArtNSculps user is signed in.");
+
+    }
+
+  });
+
+});
