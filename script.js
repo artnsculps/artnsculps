@@ -125,7 +125,17 @@ function productEmoji(category) {
   if (category === "nails") return "💅";
   return "👗";
 }
+function filterProducts(category) {
+  const filtered = products.filter(function(product) {
+    return product.category === category;
+  });
 
+  renderProducts(filtered);
+
+  document.getElementById("shop").scrollIntoView({
+    behavior: "smooth"
+  });
+}
 function renderProducts(list) {
   const grid = document.getElementById("productGrid");
 
