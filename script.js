@@ -4,7 +4,7 @@ const starterProducts = [
     name: "Sunset Bloom",
     category: "art",
     price: 45,
-    image: "",
+    image: "<iframe src="https://assets.pinterest.com/ext/embed.html?id=1093459984556503869" height="520" width="236" frameborder="0" scrolling="no" ></iframe>",
     description: "Original colorful artwork inspired by warm sunsets and flowers."
   },
   {
