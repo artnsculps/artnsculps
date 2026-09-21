@@ -8,7 +8,8 @@ const starterProducts = [
 
 ]; 
 
- 
+
+
 
 let products = []; 
 
